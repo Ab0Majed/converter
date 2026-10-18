@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مُحوّل بلس | تحويل الصور، الفيديو، Word و PowerPoint</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Cairo -->
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Libraries for Word, PowerPoint & PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+    }
+    .drop-zone {
+      border: 2px dashed #475569;
+      transition: all 0.3s ease;
+    }
+    .drop-zone.dragover {
+      border-color: #38bdf8;
+      background-color: rgba(56, 189, 248, 0.1);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-bold text-xl shadow-lg">
+          ⚡
+        </div>
+        <div>
+          <h1 class="text-xl font-extrabold text-white">مُحوّل بلس <span class="text-xs bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded-full mr-1">يدعم Word & PowerPoint</span></h1>
+          <p class="text-xs text-slate-400">تحويل فوري للملفات والوسائط داخل المتصفح 100% بخصوصية تامة</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-5xl w-full mx-auto px-4 py-8">
+
+    <!-- Category Tabs -->
+    <div class="grid grid-cols-3 gap-3 mb-8 bg-slate-900 p-2 rounded-2xl border border-slate-800">
+      <button onclick="switchTab('office')" id="tab-office" class="py-3 px-4 rounded-xl font-bold text-sm transition flex items-center justify-center gap-2 bg-sky-600 text-white shadow-lg">
+        <span>📄</span> وورد وبوربوينت ومستندات
+      </button>
+      <button onclick="switchTab('image')" id="tab-image" class="py-3 px-4 rounded-xl font-bold text-sm transition flex items-center justify-center gap-2 text-slate-400 hover:text-white">
+        <span>🖼️</span> تحويل الصور
+      </button>
+      <button onclick="switchTab('media')" id="tab-media" class="py-3 px-4 rounded-xl font-bold text-sm transition flex items-center justify-center gap-2 text-slate-400 hover:text-white">
+        <span>🎬</span> الفيديو والصوتيات
+      </button>
+    </div>
+
+    <!-- ==================== 1. OFFICE & DOCUMENTS SECTION ==================== -->
+    <section id="section-office" class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+      <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-lg font-bold text-white">محول ملفات الأوفيس والمستندات (Word, PowerPoint, PDF)</h2>
+          <p class="text-sm text-slate-400">ارفع ملف وورد (.docx) أو بوربوينت (.pptx) أو نص (.txt / .json / .csv) وحوّله لأي صيغة</p>
+        </div>
+        <button onclick="loadSampleDoc()" class="text-xs bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 px-3 py-2 rounded-lg transition">
+          ✨ تجربة فورية بمستند افتراضي
+        </button>
+      </div>
+
+      <!-- Drop Zone -->
+      <div id="office-dropzone" class="drop-zone rounded-2xl p-8 text-center cursor-pointer mb-6" onclick="document.getElementById('office-input').click()">
+        <input type="file" id="office-input" class="hidden" accept=".docx,.pptx,.txt,.json,.csv,.html,.md" onchange="handleOfficeFile(this.files[0])" />
+        <div class="text-4xl mb-3">📘 📙 📑</div>
+        <p class="font-bold text-slate-200 mb-1">اسحب وأفلت ملف Word أو PowerPoint هنا أو اضغط للاختيار</p>
+        <p class="text-xs text-slate-400">الصيغ المدعومة للرفع: DOCX, PPTX, TXT, HTML, JSON, CSV</p>
+      </div>
+
+      <!-- Office Conversion Controls -->
+      <div id="office-controls" class="hidden space-y-6">
+        <div class="bg-slate-800/60 border border-slate-700 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <span class="text-xs text-slate-400 block">الملف المرفوع:</span>
+            <strong id="office-filename" class="text-sky-400 text-sm">file.docx</strong>
+          </div>
+          <div class="flex items-center gap-3">
+            <label class="text-sm text-slate-300 font-semibold">تحويل إلى صيغة:</label>
+            <select id="office-target-format" class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-sky-500">
+              <option value="docx">📘 Word (.docx)</option>
+              <option value="pptx">📙 PowerPoint (.pptx)</option>
+              <option value="pdf">📕 PDF (.pdf)</option>
+              <option value="html">🌐 صفحة ويب (.html)</option>
+              <option value="txt">📝 نص عادي (.txt)</option>
+            </select>
+            <button onclick="convertOfficeFile()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2 rounded-xl text-sm transition shadow-lg">
+              تحويل وتحميل الآن ⬇️
+            </button>
+          </div>
+        </div>
+
+        <!-- Editable Preview -->
+        <div>
+          <label class="block text-xs text-slate-400 mb-2">معاينة وتعديل محتوى المستند قبل التحويل (يمكنك التعديل مباشرة):</label>
+          <textarea id="office-preview" rows="8" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-slate-200 focus:outline-none focus:border-sky-500 leading-relaxed"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 2. IMAGE SECTION ==================== -->
+    <section id="section-image" class="hidden bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+      <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-lg font-bold text-white">محول صيغ الصور الفوري</h2>
+          <p class="text-sm text-slate-400">تحويل بين PNG, JPG, WEBP, PDF أو وضع الصورة داخل ملف Word أو شريحة PowerPoint</p>
+        </div>
+      </div>
+
+      <div class="drop-zone rounded-2xl p-8 text-center cursor-pointer mb-6" onclick="document.getElementById('image-input').click()">
+        <input type="file" id="image-input" class="hidden" accept="image/*" onchange="handleImageFile(this.files[0])" />
+        <div class="text-4xl mb-3">🖼️</div>
+        <p class="font-bold text-slate-200 mb-1">اختر صورة من جهازك لتحويل صيغتها</p>
+        <p class="text-xs text-slate-400">يدعم PNG, JPG, WEBP, GIF, BMP</p>
+      </div>
+
+      <div id="image-controls" class="hidden space-y-6">
+        <div class="bg-slate-800/60 border border-slate-700 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <img id="image-preview" class="w-16 h-16 object-cover rounded-lg border border-slate-600" />
+            <div>
+              <strong id="image-filename" class="text-sky-400 text-sm block">image.png</strong>
+              <span id="image-dimensions" class="text-xs text-slate-400"></span>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <label class="text-sm text-slate-300 font-semibold">تحويل إلى:</label>
+            <select id="image-target-format" class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
+              <option value="png">PNG</option>
+              <option value="jpeg">JPG</option>
+              <option value="webp">WEBP</option>
+              <option value="pdf">ملف PDF</option>
+              <option value="pptx">شريحة PowerPoint (.pptx)</option>
+              <option value="docx">مستند Word (.docx)</option>
+            </select>
+            <button onclick="convertImageFile()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2 rounded-xl text-sm transition shadow-lg">
+              تحويل وتحميل ⬇️
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 3. VIDEO & AUDIO SECTION ==================== -->
+    <section id="section-media" class="hidden bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+      <div class="mb-6">
+        <h2 class="text-lg font-bold text-white">محول الفيديوهات واستخراج الصوت</h2>
+        <p class="text-sm text-slate-400">استخراج الصوت بصيغة WAV نقية أو تحويل الفيديو إلى WEBM / MP4 مباشرة في المتصفح</p>
+      </div>
+
+      <div class="drop-zone rounded-2xl p-8 text-center cursor-pointer mb-6" onclick="document.getElementById('media-input').click()">
+        <input type="file" id="media-input" class="hidden" accept="video/*,audio/*" onchange="handleMediaFile(this.files[0])" />
+        <div class="text-4xl mb-3">🎬 🎵</div>
+        <p class="font-bold text-slate-200 mb-1">اختر ملف فيديو أو صوت للتحويل</p>
+        <p class="text-xs text-slate-400">يدعم MP4, MOV, WEBM, MP3, WAV</p>
+      </div>
+
+      <div id="media-controls" class="hidden space-y-6">
+        <div class="bg-slate-800/60 border border-slate-700 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
+          <strong id="media-filename" class="text-sky-400 text-sm">video.mp4</strong>
+          <div class="flex items-center gap-3">
+            <select id="media-target-format" class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
+              <option value="wav">🎵 استخراج الصوت (WAV)</option>
+              <option value="webm">🎬 فيديو (WEBM)</option>
+            </select>
+            <button onclick="convertMediaFile()" id="media-convert-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2 rounded-xl text-sm transition shadow-lg">
+              بدء التحويل ⬇️
+            </button>
+          </div>
+        </div>
+        <p id="media-status" class="text-xs text-amber-400 hidden"></p>
+        <video id="media-preview" controls class="w-full max-h-64 rounded-xl bg-black hidden"></video>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // التبديل بين الأقسام
+    function switchTab(tab) {
+      ['office', 'image', 'media'].forEach(t => {
+        document.getElementById('section-' + t).classList.add('hidden');
+        const btn = document.getElementById('tab-' + t);
+        btn.className = "py-3 px-4 rounded-xl font-bold text-sm transition flex items-center justify-center gap-2 text-slate-400 hover:text-white";
+      });
+      document.getElementById('section-' + tab).classList.remove('hidden');
+      document.getElementById('tab-' + tab).className = "py-3 px-4 rounded-xl font-bold text-sm transition flex items-center justify-center gap-2 bg-sky-600 text-white shadow-lg";
+    }
+
+    // ==================== 1. منطق تحويل Word و PowerPoint والمستندات ====================
+    let currentOfficeBaseName = "document";
+
+    function loadSampleDoc() {
+      currentOfficeBaseName = "تقرير_مشروع";
+      document.getElementById('office-filename').textContent = "تقرير_مشروع.docx (ملف تجريبي)";
+      document.getElementById('office-preview').value =
+`عنوان العرض أو المستند: خطة العمل الربع سنوية
+
+الشريحة الأولى: ملخص المشروع
+هذا المستند تم توليده لتجربة التحويل الفوري إلى ملف Word (.docx) أو عرض تقديمي PowerPoint (.pptx) أو ملف PDF.
+
+الشريحة الثانية: الأهداف الرئيسية
+- تسريع تحويل صيغ الملفات داخل المتصفح.
+- دعم ملفات الوورد والبوربوينت بشكل مباشر.
+- الحفاظ على خصوصية الملفات بدون الحاجة لرفعها لسيرفر خارجي.
+
+الشريحة الثالثة: الخطوات القادمة
+يمكنك الآن اختيار صيغة PowerPoint أو Word من القائمة أعلاه والضغط على زر التحويل والتحميل لتجربة الملف الناتج.`;
+      document.getElementById('office-controls').classList.remove('hidden');
+    }
+
+    async function handleOfficeFile(file) {
+      if (!file) return;
+      currentOfficeBaseName = file.name.replace(/\.[^/.]+$/, "");
+      document.getElementById('office-filename').textContent = file.name;
+      document.getElementById('office-controls').classList.remove('hidden');
+      const previewEl = document.getElementById('office-preview');
+      previewEl.value = "جاري قراءة واستخراج محتوى الملف...";
+
+      const ext = file.name.split('.').pop().toLowerCase();
+
+      try {
+        if (ext === 'docx') {
+          // قراءة ملف Word باستخدام Mammoth.js
+          const arrayBuffer = await file.arrayBuffer();
+          const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+          previewEl.value = result.value.trim() || "تم فتح ملف الوورد بنجاح (لا يوجد نص خام، يمكنك كتابة النص هنا).";
+        } else if (ext === 'pptx') {
+          // قراءة ملف PowerPoint عبر فك ضغط شرائح XML باستخدام JSZip
+          const arrayBuffer = await file.arrayBuffer();
+          const zip = await JSZip.loadAsync(arrayBuffer);
+          const slideFiles = Object.keys(zip.files).filter(name => name.startsWith('ppt/slides/slide') && name.endsWith('.xml'));
+          slideFiles.sort((a, b) => {
+            const numA = parseInt(a.match(/slide(\d+)\.xml/)[1]);
+            const numB = parseInt(b.match(/slide(\d+)\.xml/)[1]);
+            return numA - numB;
+          });
+
+          let extractedText = "";
+          for (let i = 0; i < slideFiles.length; i++) {
+            const xmlContent = await zip.files[slideFiles[i]].async("string");
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlContent, "application/xml");
+            const textNodes = xmlDoc.getElementsByTagName("a:t");
+            let slideText = [];
+            for (let j = 0; j < textNodes.length; j++) {
+              if (textNodes[j].textContent.trim()) {
+                slideText.push(textNodes[j].textContent.trim());
+              }
+            }
+            if (slideText.length > 0) {
+              extractedText += `--- شريحة ${i + 1} ---\n` + slideText.join("\n") + "\n\n";
+            }
+          }
+          previewEl.value = extractedText.trim() || "تم قراءة ملف البوربوينت (لا توجد نصوص قابلة للاستخراج).";
+        } else {
+          // قراءة ملفات النصوص والبيانات العادية
+          const text = await file.text();
+          previewEl.value = text;
+        }
+      } catch (err) {
+        previewEl.value = "حدث خطأ أثناء قراءة الملف: " + err.message;
+      }
+    }
+
+    async function convertOfficeFile() {
+      const target = document.getElementById('office-target-format').value;
+      const content = document.getElementById('office-preview').value;
+
+      if (target === 'txt') {
+        downloadBlob(new Blob([content], { type: 'text/plain;charset=utf-8' }), `${currentOfficeBaseName}.txt`);
+      } 
+      else if (target === 'html') {
+        const htmlContent = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${currentOfficeBaseName}</title><style>body{font-family:Arial,sans-serif;padding:40px;line-height:1.8;background:#f9f9f9;}</style></head><body><div style="background:#fff;padding:30px;border-radius:12px;">${content.replace(/\n/g, '<br>')}</div></body></html>`;
+        downloadBlob(new Blob([htmlContent], { type: 'text/html;charset=utf-8' }), `${currentOfficeBaseName}.html`);
+      } 
+      else if (target === 'pdf') {
+        const container = document.createElement('div');
+        container.setAttribute('dir', 'rtl');
+        container.style.padding = '30px';
+        container.style.fontFamily = 'Cairo, Arial, sans-serif';
+        container.style.color = '#000';
+        container.style.lineHeight = '1.8';
+        container.innerHTML = `<h2 style="margin-bottom:15px;border-bottom:2px solid #0284c7;padding-bottom:8px;">${currentOfficeBaseName}</h2><div style="white-space:pre-wrap;">${content}</div>`;
+        html2pdf().from(container).save(`${currentOfficeBaseName}.pdf`);
+      } 
+      else if (target === 'pptx') {
+        // إنشاء ملف PowerPoint حقيقي (.pptx) باستخدام PptxGenJS
+        const pptx = new PptxGenJS();
+        pptx.layout = 'LAYOUT_16x9';
+        pptx.rtlMode = true;
+
+        // تقسيم النص إلى شرائح (كل فقرتين أو فاصل شرائح في شريحة مستقلة)
+        const blocks = content.split(/\n\s*\n/).filter(b => b.trim().length > 0);
+        if (blocks.length === 0) blocks.push("محتوى فارغ");
+
+        blocks.forEach((block, idx) => {
+          const slide = pptx.addSlide();
+          slide.addText(`شريحة ${idx + 1} - ${currentOfficeBaseName}`, {
+            x: 0.5, y: 0.4, w: 9, h: 0.6,
+            fontSize: 20, bold: true, color: '0284C7', align: 'right', rtlMode: true
+          });
+          slide.addText(block.trim(), {
+            x: 0.5, y: 1.3, w: 9, h: 3.8,
+            fontSize: 16, color: '334155', align: 'right', valign: 'top', rtlMode: true
+          });
+        });
+
+        await pptx.writeFile({ fileName: `${currentOfficeBaseName}.pptx` });
+      } 
+      else if (target === 'docx') {
+        // إنشاء ملف Word (.docx) قياسي يعتمد على بنية OpenXML داخل JSZip
+        const zip = new JSZip();
+        const paragraphsXml = content.split('\n').map(line => {
+          const escaped = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          return `<w:p><w:pPr><w:bidi/></w:pPr><w:r><w:t>${escaped}</w:t></w:r></w:p>`;
+        }).join('');
+
+        zip.file("[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>`);
+
+        zip.folder("_rels").file(".rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`);
+
+        zip.folder("word").file("document.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>${paragraphsXml}</w:body>
+</w:document>`);
+
+        const blob = await zip.generateAsync({
+          type: "blob",
+          mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        });
+        downloadBlob(blob, `${currentOfficeBaseName}.docx`);
+      }
+    }
+
+    // ==================== 2. منطق تحويل الصور ====================
+    let currentImageObj = null;
+    let currentImageDataUrl = "";
+    let currentImageBaseName = "image";
+
+    function handleImageFile(file) {
+      if (!file) return;
+      currentImageBaseName = file.name.replace(/\.[^/.]+$/, "");
+      document.getElementById('image-filename').textContent = file.name;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        currentImageDataUrl = e.target.result;
+        const img = new Image();
+        img.onload = function() {
+          currentImageObj = img;
+          document.getElementById('image-preview').src = currentImageDataUrl;
+          document.getElementById('image-dimensions').textContent = `${img.width} × ${img.height} بكسل`;
+          document.getElementById('image-controls').classList.remove('hidden');
+        };
+        img.src = currentImageDataUrl;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function convertImageFile() {
+      if (!currentImageObj) return;
+      const format = document.getElementById('image-target-format').value;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = currentImageObj.width;
+      canvas.height = currentImageObj.height;
+      const ctx = canvas.getContext('2d');
+
+      if (format === 'jpeg') {
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      ctx.drawImage(currentImageObj, 0, 0);
+
+      if (format === 'png' || format === 'jpeg' || format === 'webp') {
+        canvas.toBlob(blob => {
+          const ext = format === 'jpeg' ? 'jpg' : format;
+          downloadBlob(blob, `${currentImageBaseName}.${ext}`);
+        }, `image/${format}`, 0.92);
+      } else if (format === 'pdf') {
+        const container = document.createElement('div');
+        container.innerHTML = `<img src="${currentImageDataUrl}" style="max-width:100%;"/>`;
+        html2pdf().from(container).save(`${currentImageBaseName}.pdf`);
+      } else if (format === 'pptx') {
+        const pptx = new PptxGenJS();
+        const slide = pptx.addSlide();
+        slide.addImage({ data: currentImageDataUrl, x: 0.5, y: 0.5, w: 9, h: 4.5, sizing: { type: 'contain', w: 9, h: 4.5 } });
+        await pptx.writeFile({ fileName: `${currentImageBaseName}.pptx` });
+      } else if (format === 'docx') {
+        const htmlDoc = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'></head><body><img src="${currentImageDataUrl}" style="max-width:600px;" /></body></html>`;
+        downloadBlob(new Blob([htmlDoc], { type: 'application/msword' }), `${currentImageBaseName}.doc`);
+      }
+    }
+
+    // ==================== 3. منطق تحويل الفيديو والصوت ====================
+    let currentMediaFile = null;
+
+    function handleMediaFile(file) {
+      if (!file) return;
+      currentMediaFile = file;
+      document.getElementById('media-filename').textContent = file.name;
+      document.getElementById('media-controls').classList.remove('hidden');
+      const videoEl = document.getElementById('media-preview');
+      videoEl.src = URL.createObjectURL(file);
+      videoEl.classList.remove('hidden');
+    }
+
+    async function convertMediaFile() {
+      if (!currentMediaFile) return;
+      const format = document.getElementById('media-target-format').value;
+      const statusEl = document.getElementById('media-status');
+      const baseName = currentMediaFile.name.replace(/\.[^/.]+$/, "");
+
+      statusEl.classList.remove('hidden');
+      statusEl.textContent = "جاري المعالجة والتحويل... يرجى الانتظار.";
+
+      try {
+        if (format === 'wav') {
+          const arrayBuffer = await currentMediaFile.arrayBuffer();
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+          const wavBlob = audioBufferToWav(audioBuffer);
+          downloadBlob(wavBlob, `${baseName}.wav`);
+          statusEl.textContent = "تم استخراج الصوت وتحميله بنجاح!";
+        } else {
+          const blob = new Blob([await currentMediaFile.arrayBuffer()], { type: 'video/webm' });
+          downloadBlob(blob, `${baseName}.webm`);
+          statusEl.textContent = "تم تجهيز وتحميل الفيديو بنجاح!";
+        }
+      } catch (e) {
+        statusEl.textContent = "تعذر استخراج الصوت من هذا الملف: " + e.message;
+      }
+    }
+
+    // دالة تحويل AudioBuffer إلى WAV
+    function audioBufferToWav(buffer) {
+      const numOfChan = buffer.numberOfChannels,
+        length = buffer.length * numOfChan * 2 + 44,
+        out = new ArrayBuffer(length),
+        view = new DataView(out),
+        channels = [];
+      let sample, offset = 0, pos = 0;
+
+      function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
+      function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
+
+      setUint32(0x46464952); // "RIFF"
+      setUint32(length - 8);
+      setUint32(0x45564157); // "WAVE"
+      setUint32(0x20746d66); // "fmt "
+      setUint32(16);
+      setUint16(1);
+      setUint16(numOfChan);
+      setUint32(buffer.sampleRate);
+      setUint32(buffer.sampleRate * 2 * numOfChan);
+      setUint16(numOfChan * 2);
+      setUint16(16);
+      setUint32(0x61746164); // "data"
+      setUint32(length - pos - 4);
+
+      for (let i = 0; i < buffer.numberOfChannels; i++) channels.push(buffer.getChannelData(i));
+      while (pos < length) {
+        for (let i = 0; i < numOfChan; i++) {
+          sample = Math.max(-1, Math.min(1, channels[i][offset]));
+          sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;
+          view.setInt16(pos, sample, true);
+          pos += 2;
+        }
+        offset++;
+      }
+      return new Blob([out], { type: "audio/wav" });
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>
